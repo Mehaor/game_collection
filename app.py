@@ -1,10 +1,12 @@
 from flask import Flask, flash, jsonify, request, render_template, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 import settings
 import datetime
 from functools import wraps
 import json
-import requests
+import uuid
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = settings.SQLALCHEMY_DATABASE_URI
@@ -30,6 +32,14 @@ class User(db.Model):
 
     def __repr__(self):
         return '<User %r>' % self.username
+
+    @property
+    def data(self):
+        return {'username': self.username,
+                'screen_name': self.screen_name or self.username,
+                'avatar': self.avatar,
+                'is_active': self.is_active,
+                'is_admin': self.is_admin}
 
     @property
     def name(self):
@@ -70,7 +80,7 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if session.get('user') is None or not session.get('user').get('is_active'):
-            return redirect(url_for('login', next=request.url))
+            return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -98,15 +108,16 @@ def admin():
 
 @app.route('/login/')
 def login():
-    #if request.method == 'POST':
-    #    user = authenticate()
-    #    if user:
-    #        flash('logged in as %s' % user.name)
-    #        session['user'] = user.__dict__
-    #        print session['user']
-    #        return redirect(redirect(request.args.get('next'))) if request.args.get('next') \
-    #            else redirect(url_for('index'))
-    return render_template('login.html', vk_app_id=settings.VK_APP_ID)
+    if session.get('user'):
+        return redirect(url_for('index'))
+    return render_template('login.html', vk_app_id=settings.VK_APP_ID, fb_app_id=settings.FB_APP_ID)
+
+
+@app.route('/logout/')
+@login_required
+def logout():
+    session.pop('user', None)
+    return redirect(url_for('index'))
 
 
 @app.route('/auth/', methods=['POST'])
@@ -115,10 +126,9 @@ def auth():
         try:
             user = authenticate(json.loads(request.data))
             if user:
-                return jsonify({'username': user.username,
-                                'screen_name': user.screen_name,
-                                'avatar': user.avatar
-                                }), 200
+                session['user'] = user.data
+                d = user.data
+                return jsonify(d), 200
         except ValueError:
             pass
     return 'auth failed', 403
@@ -128,33 +138,39 @@ def authenticate(auth_data):
     def auth_vk():
         if auth_data.get('authType') != 'vk':
             return None
-        print type(auth_data)
-        print auth_data.get('user')
-        #r = requests.get('https://api.vk.com/method/users.get', params={'v': '5.52',
-        #                                                                'user_ids': auth_data.get('user').get('id'),
-        #                                                                'fields': 'photo_50'
-        #                                                                })
-        #print r.json()
-        #try:
-        #    avatar = r.json().get('response')[0].get('photo_50')
-        #except (AttributeError, IndexError, KeyError):
-        #    avatar = ''
-
-        return {'username': 'vk%s' % auth_data.get('user').get('id'),
-                'screen_name': '%s %s' % (auth_data.get('user').get('first_name'),
-                                          auth_data.get('user').get('last_name')),
-                #'avatar': avatar,
-                }
+        return {'username': 'vk%s' % auth_data.get('id'),
+                'screen_name': '%s %s' % (auth_data.get('first_name'),
+                                          auth_data.get('last_name')),
+                'avatar': auth_data.get('photo_50')}
 
     def auth_fb():
-        return None
+        if auth_data.get('authType') != 'fb':
+            return None
+        print auth_data
+        return {'username': 'fb%s' % auth_data.get('id'),
+                'screen_name': auth_data.get('name'),
+                'avatar': auth_data.get('picture', {}).get('data', {}).get('url')}
 
     def auth_anonymous():
-        return None
+        if auth_data.get('authType') != 'anonymous':
+            return None
+        print auth_data
+        return {'username': auth_data.get('username') or 'anon%s' % str(uuid.uuid4())}
 
     user_data = auth_vk() or auth_fb() or auth_anonymous()
     print user_data
-    return User('username')
+    if user_data:
+        try:
+            user = User(**user_data)
+            db.session.add(user)
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            user = User.query.filter_by(username=user_data.get('username')).first()
+        return user
+    return None
+
+app.secret_key = settings.APP_SECRET
 
 if __name__ == '__main__':
     app.run(debug=settings.DEBUG)

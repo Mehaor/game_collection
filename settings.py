@@ -8,9 +8,12 @@ INITIAL_SITE_SETTINGS = [
 
 DEBUG = False
 
+APP_SECRET = ''
+
 VK_APP_ID = ''
 VK_APP_SECRET = ''
 
+FB_APP_ID = ''
 
 try:
     from settings_local import *

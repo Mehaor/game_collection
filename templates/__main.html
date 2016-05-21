@@ -5,6 +5,10 @@
     <title>{% block title %}{% endblock %}</title>
 </head>
 <body>
+<a href="/logout/">logout</a>
+{% if session.user %}
+{{ session.user.screen_name }}
+{% endif %}
 <div>
     {% block content %}{% endblock %}
 </div>
