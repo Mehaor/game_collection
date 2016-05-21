@@ -8,6 +8,10 @@ INITIAL_SITE_SETTINGS = [
 
 DEBUG = False
 
+VK_APP_ID = ''
+VK_APP_SECRET = ''
+
+
 try:
     from settings_local import *
 except ImportError:

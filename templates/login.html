@@ -1,0 +1,36 @@
+{% extends '__main.html' %}
+
+
+{% block content %}
+LOGEN
+    <script>
+        function sendAuthData(authData) {
+            console.log(authData);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/auth/', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState != 4 || xhr.status != 200) return;
+                console.log(xhr.responseText);
+            };
+            xhr.send(JSON.stringify(authData));
+
+        }
+
+    </script>
+
+    <script src="//vk.com/js/api/openapi.js" type="text/javascript"></script>
+    <script language="javascript">
+        VK.init({ apiId: {{ vk_app_id }} });
+        function authVK(response) {
+            if (response.session) {
+                var postData = response.session;
+                postData.authType = "vk";
+
+                sendAuthData(postData);
+            }
+        }
+    </script>
+    <div>
+        <button id="auth_vk" onclick="VK.Auth.login(authVK);">VK</button>
+    </div>
+{% endblock %}
