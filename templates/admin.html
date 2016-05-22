@@ -1,1 +1,23 @@
-{% extends '__main.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+{% if session.user and session.user.is_admin %}
+<ul>
+{% for m in model_list %}
+    <li><a href="/admin/d/{{ m.slug }}">{{ m.model }}</a></li>
+{% endfor %}
+</ul>
+{% else %}
+<form method="post">
+    <input type="text" id="username" name="username" placeholder="username">
+    <input type="text" id="password" name="password" placeholder="password">
+    <input type="submit" value="Ok">
+</form>
+{% endif %}
+
+</body>
+</html>

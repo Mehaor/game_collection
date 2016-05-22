@@ -1,4 +1,4 @@
-from flask import Flask, flash, jsonify, request, render_template, session, redirect, url_for
+from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 import settings
@@ -6,6 +6,7 @@ import datetime
 from functools import wraps
 import json
 import uuid
+import sys
 
 
 app = Flask(__name__)
@@ -20,15 +21,15 @@ class User(db.Model):
     screen_name = db.Column(db.String(100), nullable=True)
     avatar = db.Column(db.String(200), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
-    is_admin = db.Column(db.Boolean, default=True)
+    is_admin = db.Column(db.Boolean, default=False)
 
-    def __init__(self, username, *args, **kwargs):
+    def __init__(self, username, **kwargs):
         self.username = username
         self.password = kwargs.get('password', '')
         self.screen_name = kwargs.get('screen_name', '')
         self.avatar = kwargs.get('avatar', '')
         self.is_active = bool(kwargs.get('is_active', True))
-        self.is_admin = bool(kwargs.get('is_admin', True))
+        self.is_admin = bool(kwargs.get('is_admin', False))
 
     def __repr__(self):
         return '<User %r>' % self.username
@@ -101,9 +102,42 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/admin/')
+@app.route('/admin/', methods=['GET', 'POST'])
 def admin():
-    return ''
+    if request.method == 'POST':
+        user = User.query.filter_by(username=request.form.get('username'),
+                                    password=request.form.get('password')).first()
+        if user and user.is_admin:
+            session['user'] = user.data
+    if session.get('user', {}).get('is_admin'):
+        return redirect(url_for('admin_main'))
+    return render_template('admin.html')
+
+
+@app.route('/admin/main/')
+@admin_required
+def admin_main():
+    m_list = []
+    for m in settings.ADMIN_MODELS:
+        try:
+            getattr(sys.modules[__name__], m.get('model'))
+            m_list.append(m)
+        except AttributeError:
+            pass
+    print m_list
+    return render_template('admin.html', model_list=m_list)
+
+
+@app.route('/admin/d/<model_slug>/')
+def admin_model(model_slug):
+    for m in settings.ADMIN_MODELS:
+        if m.get('slug') == model_slug:
+            try:
+                getattr(sys.modules[__name__], m.get('model'))
+                return render_template('admin_model.html', model=m)
+            except AttributeError:
+                pass
+    return render_template('404.html'), 404
 
 
 @app.route('/login/')
@@ -127,8 +161,7 @@ def auth():
             user = authenticate(json.loads(request.data))
             if user:
                 session['user'] = user.data
-                d = user.data
-                return jsonify(d), 200
+                return jsonify(user.data), 200
         except ValueError:
             pass
     return 'auth failed', 403
@@ -158,8 +191,8 @@ def authenticate(auth_data):
         return {'username': auth_data.get('username') or 'anon%s' % str(uuid.uuid4())}
 
     user_data = auth_vk() or auth_fb() or auth_anonymous()
-    print user_data
     if user_data:
+        user_data['is_admin'] = False
         try:
             user = User(**user_data)
             db.session.add(user)

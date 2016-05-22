@@ -15,6 +15,12 @@ VK_APP_SECRET = ''
 
 FB_APP_ID = ''
 
+ADMIN_MODELS = [
+    {'model': 'User', 'slug': 'user', 'editable': False, 'search_fields': ['username', 'screen_name']},
+    {'model': 'Game', 'slug': 'game', 'editable': True, 'search_fields': ['title']},
+    {'model': 'Gamsde', 'slug': 'game', 'editable': True},
+]
+
 try:
     from settings_local import *
 except ImportError:
