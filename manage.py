@@ -1,4 +1,4 @@
-from app import db, User, SiteSetting
+from game_collection import db, User, SiteSetting
 import settings
 
 

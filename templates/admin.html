@@ -2,9 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title></title>
+    <title>ADMIN</title>
 </head>
 <body>
+<div>
+{% block content %}
 {% if session.user and session.user.is_admin %}
 <ul>
 {% for m in model_list %}
@@ -14,10 +16,11 @@
 {% else %}
 <form method="post">
     <input type="text" id="username" name="username" placeholder="username">
-    <input type="text" id="password" name="password" placeholder="password">
+    <input type="password" id="password" name="password" placeholder="password">
     <input type="submit" value="Ok">
 </form>
 {% endif %}
-
+{% endblock %}
+</div>
 </body>
 </html>

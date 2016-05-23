@@ -1,0 +1,15 @@
+<form method="post">
+{% for field in form_data %}
+    {% if field.type == 'textarea' %}
+    <textarea name="{{ field.name }}" placeholder="{{ field.name }}">{{ field.value }}</textarea>
+    {% else %}
+    <p><input type="{{ field.type }}" name="{{ field.name }}" placeholder="{{ field.name }}"
+            {% if field.type == 'checkbox' %}
+                  {% if field.value %}value="1" checked{% else %}value="0"{% endif %}
+              onchange="this.value=this.checked ? 1 : 0;"
+              {% else %}value="{{ field.value }}"
+              {% endif %}></p>
+    {% endif %}
+{% endfor %}
+    <input type="submit" value="Ok">
+</form>

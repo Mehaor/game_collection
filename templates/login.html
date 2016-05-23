@@ -4,7 +4,7 @@
 {% block content %}
     <script>
         function sendAuthData(authData, saveUsername) {
-            console.log(authData);
+            //console.log(authData);
             var xhr = new XMLHttpRequest();
             xhr.open('POST', '/auth/', true);
             xhr.onreadystatechange = function() {
@@ -16,7 +16,7 @@
                 }
                 document.location.href = '/';
             };
-            console.log(saveUsername);
+            //console.log(saveUsername);
             xhr.send(JSON.stringify(authData));
         }
     </script>

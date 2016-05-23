@@ -1,10 +1,50 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title></title>
-</head>
-<body>
-{{ model }}
-</body>
-</html>
+{% extends 'admin.html' %}
+
+{% block content %}
+    <h4>{{ model.model }}</h4>
+    <input id="searchText" type="text" placeholder="search {{ model.model }}">
+
+    <div id="searchResults"></div>
+<script>
+    var sr = document.getElementById('searchResults');
+    function search(s) {
+        if (s.length > 0 && s.length < 3) return;
+        var xhr = new XMLHttpRequest();
+        var params = 's=' + s + '&m=' + '{{ model.slug }}';
+        xhr.open('GET', '/admin/api/search/?' + params, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState != 4 || xhr.status != 200) return;
+            updateSearchData(JSON.parse(xhr.responseText));
+        };
+        xhr.send();
+    }
+    function formatField(d, key) {
+        if (key == 'avatar' || key == 'picture') d = '<img src="' + d + '">';
+        if (typeof d === 'boolean')  d = '<img src="/static/images/' + (d ? 'true.png' : 'false.png') + '">';
+        return d;
+    }
+    function updateSearchData(searchData) {
+        if (searchData.items.length == 0) return;
+        var rows = '<tr>';
+        for (var k = 0; k < searchData.keys.length; k++) {
+            rows += '<th>' + searchData.keys[k] + '</th>';
+        }
+        rows += '</tr>';
+        for (var i = 0; i < searchData.items.length; i++) {
+            rows += '<tr>';
+            var items = searchData.items[i];
+            for (var j = 0; j < items.length; j++) {
+                rows += '<td>' + '' + formatField(items[j], searchData.keys[j]) + '</td>';
+            }
+            rows += '</tr>\n';
+        }
+        sr.innerHTML += '<table>' + rows + '</table>';
+    }
+    search('');
+    var st = document.getElementById("searchText");
+    st.oninput = function() {
+        sr.innerHTML = '';
+        search(st.value);
+    }
+</script>
+{% endblock %}

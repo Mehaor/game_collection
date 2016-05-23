@@ -1,18 +1,17 @@
+DEBUG = False
+
 SQLALCHEMY_DATABASE_URI = ''
 
 INITIAL_USERS = []
-
 INITIAL_SITE_SETTINGS = [
     {'name': 'current_game', 'value': ''}
 ]
-
-DEBUG = False
+DEFAULT_AVATAR_PATH = '/static/images/avatar.png'
 
 APP_SECRET = ''
 
 VK_APP_ID = ''
 VK_APP_SECRET = ''
-
 FB_APP_ID = ''
 
 ADMIN_MODELS = [
