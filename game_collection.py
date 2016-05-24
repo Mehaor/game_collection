@@ -209,7 +209,6 @@ def add_edit_object(model_slug, pk=None):
             except IntegrityError:
                 pass
         else:
-            print {k: v for k, v in request.form.items()}
             cls.query.filter_by(id=pk).update({k: v for k, v in request.form.items()})
             db.session.commit()
             o = cls.query.filter_by(id=pk).first()
